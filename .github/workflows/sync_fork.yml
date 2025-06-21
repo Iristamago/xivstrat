@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest  # 使用 Ubuntu 环境
     steps:
       - name: Sync with upstream
-        uses: aormsby/Fork-Sync-With-Upstream-action@v3.0.0
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
         with:
           upstream_repository: "mogworks/xivstrat"
           upstream_branch: "main"
