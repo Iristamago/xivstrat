@@ -33,11 +33,11 @@ const { base = 0 }: Props = Astro.props
 <BareFangsEvent time="04:34.250" base={base} phase="P3" />
 <TerrestrialRageCast start="04:36.338" base={base} />
 <FangedChargeCast start="04:42.471" base={base} />
-<FangedChargeCast start="04:44.904" base={base} />
 <TerrestrialRageActivate time="04:47.680" base={base} order="1" />
 <ShadowchaseCast start="04:45.454" base={base} />
-<ShadowchaseCast start="04:52.704" base={base} shadow={true} />
+<FangedChargeCast start="04:44.904" base={base} />
 <TerrestrialRageActivate time="04:54.399" base={base} order="2" />
+<ShadowchaseCast start="04:52.704" base={base} shadow={true} />
 <RetargetableEvent time="04:56.667" base={base} />
 <RoaringWindCast start="04:56.667" base={base} />
 
@@ -65,6 +65,12 @@ const { base = 0 }: Props = Astro.props
       <RoleIcon role="tank|healer" />
       分摊，反之亦然
     </P>
+    <P>
+      注意该机制的分散会
+      <Span variant="cyan">点够4人</Span>
+      ，所以如果中途有分散点名死了，就会点到分摊的人群中，导致团灭
+    </P>
+    <!-- TODO -->
 
     <T text={translations.fangedCharge} variant="yellow" class="mt-8" />
     <P>
