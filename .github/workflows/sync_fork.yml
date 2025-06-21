@@ -2,20 +2,23 @@ name: Auto Sync Fork (Hourly)
 
 on:
   schedule:
-    - cron: '0 * * * *'  # 每个小时的第 0 分钟运行
-  workflow_dispatch:     # 允许手动点击运行
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 必须要有写入权限
     steps:
-      # 新增：检出你的仓库
-      - name: Checkout current fork
+      # 1. 检出当前仓库（必须使用持久化参数）
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 拉取完整历史记录（必要！）
+          fetch-depth: 0  # 关键！必须获取完整历史记录
+          persist-credentials: true  # 保持认证信息
 
-      # 原有同步步骤
+      # 3. 同步上游仓库
       - name: Sync with upstream
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
         with:
@@ -25,3 +28,7 @@ jobs:
           git_pull_args: "--ff-only"
           git_push_args: "--force-with-lease"
 
+      # 4. 可选通知
+      - name: Notify if updated
+        if: success()
+        run: echo "Fork synced successfully!"
