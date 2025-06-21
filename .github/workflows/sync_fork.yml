@@ -1,0 +1,25 @@
+name: Auto Sync Fork (Hourly)
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # 每个小时的第 0 分钟运行
+  workflow_dispatch:     # 允许手动点击运行
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest  # 使用 Ubuntu 环境
+    steps:
+      - name: Sync with upstream
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.0.0
+        with:
+          upstream_repository: "mogworks/xivstrat"
+          upstream_branch: "main"
+          target_branch: "main"
+          git_pull_args: "--ff-only"
+          git_push_args: "--force-with-lease"  # 安全强制推送
+
+      - name: Notify if updated
+        if: success()
+        run: |
+          echo "Fork 已同步到上游最新版本！"
+          # 可选：发送通知（如 Slack/Email）
