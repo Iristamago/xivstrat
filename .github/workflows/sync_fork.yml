@@ -1,34 +1,25 @@
-name: Auto Sync Fork (Hourly)
-
+name: Sync with Upstream
 on:
   schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch:
+    - cron: '0 * * * *'  # 每小时检查一次，可调整
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # 必须要有写入权限
     steps:
-      # 1. 检出当前仓库（必须使用持久化参数）
-      - name: Checkout repository
+      - name: Checkout your fork
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 关键！必须获取完整历史记录
-          persist-credentials: true  # 保持认证信息
+          fetch-depth: 0  # 获取完整历史记录
 
-      # 3. 同步上游仓库
-      - name: Sync with upstream
-        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
-        with:
-          upstream_repository: "mogworks/xivstrat"
-          upstream_branch: "main"
-          target_branch: "main"
-          git_pull_args: "--ff-only"
-          git_push_args: "--force-with-lease"
+      - name: Add upstream repository
+        run: |
+          git remote add upstream https://github.com/mogworks/xivstrat.git
+          git fetch upstream
 
-      # 4. 可选通知
-      - name: Notify if updated
-        if: success()
-        run: echo "Fork synced successfully!"
+      - name: Merge upstream changes
+        run: |
+          git checkout main  # 或你的默认分支
+          git merge upstream/main
+          git push origin main
