@@ -7,8 +7,15 @@ on:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest  # 使用 Ubuntu 环境
+    runs-on: ubuntu-latest
     steps:
+      # 新增：检出你的仓库
+      - name: Checkout current fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 拉取完整历史记录（必要！）
+
+      # 原有同步步骤
       - name: Sync with upstream
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
         with:
@@ -16,10 +23,5 @@ jobs:
           upstream_branch: "main"
           target_branch: "main"
           git_pull_args: "--ff-only"
-          git_push_args: "--force-with-lease"  # 安全强制推送
+          git_push_args: "--force-with-lease"
 
-      - name: Notify if updated
-        if: success()
-        run: |
-          echo "Fork 已同步到上游最新版本！"
-          # 可选：发送通知（如 Slack/Email）
