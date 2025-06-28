@@ -2,7 +2,6 @@
 import DutyStratLayout from '@/layouts/DutyStratLayout.astro'
 import EventSection from '@/components/section/EventSection.astro'
 import SeparatorSection from '@/components/section/SeparatorSection.astro'
-import DraftWarning from '@/components/draft-warning/DraftWarning.astro'
 import NoteSection from '@/components/section/NoteSection.astro'
 import DamageDown from '@/components/buff/DamageDown.astro'
 import P from '@/components/typography/P.astro'
@@ -32,17 +31,12 @@ const base = '06:09.273'
 const sinisterSeeds = translations.sinisterSeeds
 const specialBombarianSpecial = translations.specialBombarianSpecial
 const stoneringer2Stoneringers = translations.stoneringer2Stoneringers
-const brutalImpact = translations.brutalImpact
-const stoneringer = translations.stoneringer
 const debrisDeathmatch = translations.debrisDeathmatch
 const strangeSeeds = translations.strangeSeeds
 const sporesac = translations.sporeSac
 ---
 
 <DutyStratLayout dutyId={dutyId} base={base}>
-  <SeparatorSection />
-  <DraftWarning />
-  <SeparatorSection />
   <NoteSection>
     <div class="flex flex-col gap-4">
       <P>P3机制多为前2P已出现的相同机制或少数机制稍微修改后的重新组合，故部分重复机制后文不再赘述</P>
@@ -115,7 +109,7 @@ const sporesac = translations.sporeSac
   <SeparatorSection id="sinister-seeds" title={sinisterSeeds} />
   <SinisterSeedsP3 />
 
-  <SeparatorSection title={brutalImpact} />
+  <SeparatorSection />
   <BrutalImpactCast
     start="09:05.357"
     activateTimes={[
@@ -136,13 +130,13 @@ const sporesac = translations.sporeSac
   <Stoneringer2Second time="09:26.252" />
 
   <AttackSection time="10:14.526" damage="57000" damageType="physical" />
-  <SeparatorSection title={stoneringer} />
+
+  <SeparatorSection />
   <StoneringerCast start="10:16.130" />
-  <SmashHereThereCast start="10:23.968" />
   <BrutishSwingActivate time="10:27.935" />
+  <SmashHereThereCast start="10:23.968" />
   <AttackSection time="10:31.948" damage="57000" damageType="physical" />
 
-  <SeparatorSection title={brutalImpact} />
   <BrutalImpactCast
     start="10:33.242"
     activateTimes={[
@@ -159,7 +153,7 @@ const sporesac = translations.sporeSac
   <AttackSection time="10:48.792" damage="57000" damageType="physical" />
   <AttackSection time="10:51.819" damage="57000" damageType="physical" />
   <AttackSection time="10:54.850" damage="57000" damageType="physical" />
-  <SeparatorSection id="special-bombarian-special" title={specialBombarianSpecial} />
   <MoveToCenterEvent time="10:55.164" />
+  <SeparatorSection id="special-bombarian-special" title={specialBombarianSpecial} />
   <SpecialBombarianSpecial />
 </DutyStratLayout>
