@@ -1,5 +1,5 @@
 ---
-import { type Time } from '@/lib/utils'
+import { Image } from 'astro:assets'
 
 import ImgRow from '@/components/typography/ImgRow.astro'
 import ListDot from '@/components/ListDot.astro'
@@ -7,22 +7,41 @@ import MechanicSection from '@/components/section/MechanicSection.astro'
 import P from '@/components/typography/P.astro'
 import Quote from '@/components/typography/Quote.astro'
 import Span from '@/components/Span.vue'
-import teleport1_img from '@/assets/07/m8s2/teleport1.png'
-import teleport2_img from '@/assets/07/m8s2/teleport2.png'
+import MagicVulnerabilityUp from '@/components/buff/MagicVulnerabilityUp.astro'
+import T from '@/components/typography/T.astro'
+import MultiSolutionSection from '@/components/section/MultiSolutionSection.vue'
 
 import ImmobileSuitDebuff from '../_components/ImmobileSuitDebuff.astro'
 import RiseOfTheHowlingWindCast from '../_components/RiseOfTheHowlingWindCast.astro'
+import TwofoldTempestCast from '../_components/TwofoldTempestCast.astro'
+import TwofoldTempestActivate from '../_components/TwofoldTempestActivate.astro'
 
-interface Props {
-  start: Time
-}
+import { translations } from '../_translations'
 
-const { start }: Props = Astro.props
+import mechanic_img from '@/assets/07/m8s2/p2/twofoldTempest_mech.png'
+import teleport1_img from '@/assets/07/m8s2/teleport1.png'
+import teleport2_img from '@/assets/07/m8s2/teleport2.png'
 
-const howlingBlade = '啸刃'
+const howlingBlade = translations.howlingBlade
+
+const activateTimes = ['09:33.725', '09:40.823', '09:47.925', '09:55.027']
+
+const solutions = [
+  {
+    id: 'ROTHW-normal',
+    title: '解法：常规思路',
+  },
+  {
+    id: 'ROTHW-rr',
+    title: '解法：RR式【改】',
+  },
+]
+const defaultSolution = '解法：常规思路'
 ---
 
-<RiseOfTheHowlingWindCast start={start} />
+<RiseOfTheHowlingWindCast start="09:17.549" />
+<TwofoldTempestCast start="09:26.675" />
+<TwofoldTempestActivate activateTimes={activateTimes} />
 <MechanicSection>
   <div class="flex flex-col gap-4">
     <P>
@@ -69,3 +88,38 @@ const howlingBlade = '啸刃'
     />
   </div>
 </MechanicSection>
+<MechanicSection>
+  <div class="flex flex-col gap-4">
+    <P>
+      由于
+      <MagicVulnerabilityUp tag="9" hover />
+      的存在而每组伤害仅间隔
+      <Span variant="rose">7秒</Span>
+      左右，玩家需要合理分配分摊顺序
+    </P>
+    <P>
+      <Span variant="teal">圆形分摊</Span>
+      的连线是可以被其他玩家接取，伤害判定时会留下以
+      <Span variant="pink">连线目标</Span>
+      为中心的毒圈
+    </P>
+    <P>
+      <Span variant="teal">圆形分摊</Span>
+      的毒圈初始半径为
+      <Span variant="rose">5m</Span>
+      ，落地3秒后开始逐渐扩大至
+      <Span variant="rose">10m</Span>
+      ，略大于平台半径
+    </P>
+    <P>
+      <Span variant="lime">直线分摊</Span>
+      的攻击范围会覆盖整个平台
+    </P>
+    <T variant="yellow" text="范围示意" />
+    <Image src={mechanic_img} alt="双牙暴风击范围" class="max-w-100 drop-shadow-sm drop-shadow-black" />
+  </div>
+</MechanicSection>
+<MultiSolutionSection solutions={solutions} defaultSolution={defaultSolution} client:idle>
+  <div slot="解法：常规思路" class="flex flex-col gap-4">TODO</div>
+  <div slot="解法：RR式【改】" class="flex flex-col gap-4">TODO</div>
+</MultiSolutionSection>
