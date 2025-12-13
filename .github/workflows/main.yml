@@ -1,0 +1,89 @@
+name: Sync Repository from Source
+
+on:
+  # 每3小时自动运行
+  schedule:
+    - cron: '0 */3 * * *'
+  
+  # 支持手动触发
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: 'Source branch to sync from'
+        required: false
+        default: 'main'
+      target_branch:
+        description: 'Target branch to sync to'
+        required: false
+        default: 'main'
+      force_sync:
+        description: 'Force sync even if diverged?'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  sync-repository:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout target repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取所有历史记录
+        token: ${{ secrets.PAT_TOKEN }}
+    
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Add source repository as remote
+      run: |
+        git remote add source https://github.com/mogworks/xivstrat.git
+        # 或者使用SSH方式（如果仓库是私有的）
+        # git remote add source git@github.com:mogworks/xivstrat.git
+    
+    - name: Fetch from source repository
+      run: |
+        git fetch source
+        
+    - name: Merge changes from source
+      id: merge
+      run: |
+        git checkout ${{ github.event.inputs.target_branch || 'main' }}
+        
+        if [ "${{ github.event.inputs.force_sync || 'false' }}" = "true" ]; then
+          echo "Force sync enabled"
+          git reset --hard source/${{ github.event.inputs.source_branch || 'main' }}
+        else
+          # 正常合并，如果冲突则退出
+          set +e
+          git merge --no-commit --no-ff source/${{ github.event.inputs.source_branch || 'main' }}
+          MERGE_STATUS=$?
+          set -e
+          
+          if [ $MERGE_STATUS -ne 0 ]; then
+            echo "Merge conflict detected!"
+            echo "status=conflict" >> $GITHUB_OUTPUT
+            
+            # 尝试回滚
+            git merge --abort 2>/dev/null || true
+            exit 0  # 不失败，只是输出信息
+          else
+            echo "Merge successful"
+            echo "status=success" >> $GITHUB_OUTPUT
+            git commit -m "chore: sync from source repository [$(date +'%Y-%m-%d %H:%M:%S')]"
+          fi
+        fi
+    
+    - name: Push changes if merged successfully
+      if: steps.merge.outputs.status == 'success'
+      run: |
+        git push origin ${{ github.event.inputs.target_branch || 'main' }}
+    
+    - name: Notify on conflict
+      if: steps.merge.outputs.status == 'conflict'
+      run: |
+        echo "❌ Merge conflict detected. Manual intervention required."
+        echo "Please resolve conflicts manually or use force sync option."
