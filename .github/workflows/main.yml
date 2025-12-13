@@ -40,7 +40,6 @@ jobs:
     
     - name: Add source repository as remote
       run: |
-        # 使用你提供的源仓库地址
         git remote add source https://github.com/mogworks/xivstrat.git
     
     - name: Fetch from source repository
@@ -75,8 +74,10 @@ jobs:
         if ! git diff --cached --quiet || ! git diff --quiet; then
           git commit -m "chore: sync from mogworks/xivstrat [$(date +'%Y-%m-%d %H:%M:%S')]"
           echo "✅ Changes committed"
+          echo "has_commit=true" >> $GITHUB_ENV
         else
           echo "⚠️ Merge completed but no changes to commit"
+          echo "has_commit=false" >> $GITHUB_ENV
           echo "status=no_changes_after_merge" >> $GITHUB_ENV
         fi
     
@@ -86,23 +87,181 @@ jobs:
         # 强制同步后创建提交（即使内容相同）
         git commit --allow-empty -m "chore: force sync from mogworks/xivstrat [$(date +'%Y-%m-%d %H:%M:%S')]"
         echo "✅ Force sync committed"
+        echo "has_commit=true" >> $GITHUB_ENV
     
     - name: Push changes
       if: steps.sync.outputs.status == 'merged' || steps.sync.outputs.status == 'force_synced'
       run: |
-        # 只有当环境变量不是 no_changes_after_merge 时才推送
-        if [ "${{ env.status }}" != "no_changes_after_merge" ]; then
+        # 只有当有实际提交时才推送
+        if [ "${{ env.has_commit }}" = "true" ]; then
           git push origin ${{ github.event.inputs.target_branch || 'main' }}
           echo "✅ Changes pushed successfully"
+          echo "was_pushed=true" >> $GITHUB_ENV
         else
           echo "⏭️ Skipping push - no actual changes after merge"
+          echo "was_pushed=false" >> $GITHUB_ENV
         fi
     
-    - name: Success summary
-      if: success()
+    # ========== 新增：方法2 - 详细同步报告 ==========
+    - name: Generate Detailed Sync Report
+      if: always()
       run: |
         echo "========================================"
-        echo "✅ Sync workflow completed successfully"
-        echo "Source: mogworks/xivstrat"
-        echo "Status: ${{ steps.sync.outputs.status }}"
+        echo "🔄 详细同步报告 - $(date '+%Y-%m-%d %H:%M:%S')"
         echo "========================================"
+        
+        echo "## 基本信息"
+        echo "- 源仓库: mogworks/xivstrat"
+        echo "- 目标分支: ${{ github.event.inputs.target_branch || 'main' }}"
+        echo "- 同步时间: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+        
+        echo ""
+        echo "## 同步状态"
+        case "${{ steps.sync.outputs.status }}" in
+          "already_synced")
+            echo "✅ 状态: 已同步 (无新更改)"
+            ;;
+          "merged")
+            echo "🔄 状态: 已合并新更改"
+            ;;
+          "force_synced")
+            echo "⚡ 状态: 强制同步完成"
+            ;;
+          *)
+            echo "❓ 状态: ${{ steps.sync.outputs.status || '未知' }}"
+            ;;
+        esac
+        
+        echo ""
+        echo "## 操作结果"
+        if [ "${{ env.has_commit }}" = "true" ]; then
+          echo "📝 提交: 已创建"
+          if [ "${{ env.was_pushed }}" = "true" ]; then
+            echo "📤 推送: 已推送到远程仓库"
+          else
+            echo "📤 推送: 未推送 (无实际更改)"
+          fi
+        else
+          echo "📝 提交: 未创建"
+        fi
+        
+        echo ""
+        echo "## 更改详情"
+        if [ "${{ steps.sync.outputs.status }}" = "merged" ] || [ "${{ steps.sync.outputs.status }}" = "force_synced" ]; then
+          # 显示最新提交的详细信息
+          echo "### 最新提交:"
+          git log --oneline -1 2>/dev/null || echo "无提交历史"
+          
+          echo ""
+          echo "### 更改的文件列表:"
+          # 显示最近一次提交中更改的文件
+          git show --name-only --oneline HEAD 2>/dev/null | tail -n +2 || echo "无法获取文件列表"
+        else
+          echo "无新更改"
+        fi
+        
+        echo ""
+        echo "## 仓库状态"
+        echo "当前分支: $(git branch --show-current 2>/dev/null || echo '未知')"
+        echo "工作目录状态:"
+        git status --short 2>/dev/null || echo "无法获取状态"
+        
+        echo ""
+        echo "## 历史记录"
+        echo "最近5次提交:"
+        git log --oneline -5 2>/dev/null || echo "无提交历史"
+        
+        echo "========================================"
+        echo "报告生成完成"
+        echo "========================================"
+    
+    # ========== 新增：方法3 - 提交对比链接 ==========
+    - name: Create Comparison Link
+      if: always()
+      run: |
+        echo ""
+        echo "🔍 ====== 仓库对比信息 ======"
+        
+        # 获取目标仓库信息
+        OUR_REPO="${{ github.repository }}"
+        OUR_BRANCH="${{ github.event.inputs.target_branch || 'main' }}"
+        
+        # 获取最新提交哈希
+        OUR_LATEST=$(git log -1 --pretty=format:"%H" 2>/dev/null || echo "unknown")
+        OUR_LATEST_SHORT=${OUR_LATEST:0:8}
+        
+        # 获取源仓库最新提交
+        git fetch source --quiet 2>/dev/null
+        THEIR_LATEST=$(git rev-parse source/${{ github.event.inputs.source_branch || 'main' }} 2>/dev/null || echo "unknown")
+        THEIR_LATEST_SHORT=${THEIR_LATEST:0:8}
+        
+        echo "📊 提交哈希对比:"
+        echo "   目标仓库 ($OUR_BRANCH): $OUR_LATEST_SHORT"
+        echo "   源仓库 (main): $THEIR_LATEST_SHORT"
+        
+        # 生成GitHub对比链接
+        if [ "$OUR_LATEST" != "unknown" ] && [ "$THEIR_LATEST" != "unknown" ]; then
+          if [ "$OUR_LATEST" != "$THEIR_LATEST" ]; then
+            echo ""
+            echo "🔗 GitHub对比链接:"
+            echo "   https://github.com/$OUR_REPO/compare/$OUR_LATEST...$THEIR_LATEST"
+            echo ""
+            echo "📈 提交差异统计:"
+            git log --oneline $OUR_LATEST..$THEIR_LATEST 2>/dev/null | head -10
+            if [ $? -eq 0 ]; then
+              COUNT=$(git log --oneline $OUR_LATEST..$THEIR_LATEST 2>/dev/null | wc -l)
+              echo "   共有 $COUNT 个新提交待同步"
+            fi
+          else
+            echo ""
+            echo "✅ 两个仓库的提交哈希一致，已完全同步"
+          fi
+        else
+          echo ""
+          echo "⚠️  无法获取完整的提交信息，可能权限不足或网络问题"
+        fi
+        
+        echo ""
+        echo "🌐 快速访问链接:"
+        echo "   目标仓库: https://github.com/$OUR_REPO/tree/$OUR_BRANCH"
+        echo "   源仓库: https://github.com/mogworks/xivstrat"
+        echo "   Actions日志: https://github.com/$OUR_REPO/actions/runs/${{ github.run_id }}"
+    
+    # ========== 原有的成功总结（增强版） ==========
+    - name: Success Summary
+      if: success()
+      run: |
+        echo ""
+        echo "🎉 ====== 同步完成总结 ======"
+        echo "✅ Workflow 执行成功"
+        echo "🔄 同步状态: ${{ steps.sync.outputs.status }}"
+        echo "📅 完成时间: $(date '+%Y-%m-%d %H:%M:%S')"
+        echo ""
+        echo "📋 下次同步计划:"
+        echo "   每3小时自动运行 (cron: '0 */3 * * *')"
+        echo "   下次大约在: $(date -d '+3 hours' '+%H:%M')"
+        
+        # 根据状态给出建议
+        case "${{ steps.sync.outputs.status }}" in
+          "already_synced")
+            echo ""
+            echo "💡 提示: 仓库已保持同步，无需额外操作"
+            ;;
+          "merged")
+            echo ""
+            echo "💡 提示: 新更改已合并，建议:"
+            echo "   1. 查看上方「更改详情」确认更改内容"
+            echo "   2. 使用对比链接检查具体差异"
+            echo "   3. 如有需要，运行测试验证功能"
+            ;;
+          "force_synced")
+            echo ""
+            echo "⚠️  注意: 本次使用了强制同步"
+            echo "   所有本地更改已被覆盖，请确认这是预期行为"
+            ;;
+        esac
+        
+        echo ""
+        echo "🔧 手动操作:"
+        echo "   要手动触发同步，请到 Actions 页面运行此 workflow"
+        echo "   可选择是否启用 force_sync 选项"
